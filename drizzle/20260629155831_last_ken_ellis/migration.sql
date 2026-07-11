@@ -1,0 +1,4 @@
+CREATE TABLE "tweet" (
+	"tweetid" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "tweet_tweetid_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"desc" varchar(255) NOT NULL
+);
