@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Activity, BellRing } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, BellRing } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,15 +15,25 @@ type LogEntry = {
   timestamp: string;
 };
 
-const mockLogs: LogEntry[] = [
-  { id: "1", actor: "Aarav Shah", action: "Approved Maintenance Request", target: "AF-0114", timestamp: "2026-07-12T10:30:00Z" },
-  { id: "2", actor: "Meera Patel", action: "Registered Asset", target: "AF-0115", timestamp: "2026-07-12T09:15:00Z" },
-  { id: "3", actor: "System", action: "Flagged Overdue Return", target: "AF-0045", timestamp: "2026-07-11T23:59:59Z" },
-];
-
 export function ActivityWorkspace() {
-  const [logs, setLogs] = useState<LogEntry[]>(mockLogs);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [query, setQuery] = useState("");
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch("/api/activity");
+      if (res.ok) {
+        const { data } = await res.json();
+        setLogs(data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filtered = logs.filter((log) =>
     `${log.actor} ${log.action} ${log.target}`.toLowerCase().includes(query.toLowerCase())
@@ -64,7 +74,7 @@ export function ActivityWorkspace() {
                     <TableHead>Timestamp</TableHead>
                     <TableHead>Actor</TableHead>
                     <TableHead>Action</TableHead>
-                    <TableHead>Target</TableHead>
+                    <TableHead>Target ID</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -74,8 +84,8 @@ export function ActivityWorkspace() {
                         {format(new Date(log.timestamp), "MMM d, HH:mm")}
                       </TableCell>
                       <TableCell className="font-medium">{log.actor}</TableCell>
-                      <TableCell>{log.action}</TableCell>
-                      <TableCell>{log.target}</TableCell>
+                      <TableCell>{log.action.replace(/\./g, " ")}</TableCell>
+                      <TableCell className="text-xs">{log.target.substring(0,8)}...</TableCell>
                     </TableRow>
                   ))}
                   {filtered.length === 0 && (
@@ -94,17 +104,13 @@ export function ActivityWorkspace() {
         <div className="md:col-span-1 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><BellRing className="size-5" /> Recent Notifications</CardTitle>
+              <CardTitle className="flex items-center gap-2"><BellRing className="size-5" /> Notifications Context</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-4">
-                <div className="border-l-4 border-destructive pl-4 py-1">
-                  <p className="text-sm font-medium">Overdue Return Alert</p>
-                  <p className="text-xs text-muted-foreground mt-1">Projector X1 (AF-0045) is past due.</p>
-                </div>
-                <div className="border-l-4 border-primary pl-4 py-1">
-                  <p className="text-sm font-medium">Maintenance Approved</p>
-                  <p className="text-xs text-muted-foreground mt-1">AF-0114 screen repair approved.</p>
+                <div className="border-l-4 border-muted pl-4 py-1">
+                  <p className="text-sm font-medium">Real-time alerts pending</p>
+                  <p className="text-xs text-muted-foreground mt-1">Check individual workspaces for specific actions.</p>
                 </div>
               </div>
             </CardContent>

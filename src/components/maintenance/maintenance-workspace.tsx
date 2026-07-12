@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PenTool, Plus, Search, CheckCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,31 +11,77 @@ import { Textarea } from "@/components/ui/textarea";
 
 type MaintenanceRequest = {
   id: string;
-  assetTag: string;
+  assetId: string;
   issueDescription: string;
-  priority: string;
-  status: string;
-  raisedBy: string;
+  priority: "low" | "medium" | "high";
+  status: "pending" | "approved" | "in_progress" | "resolved" | "rejected";
+  raisedByEmployeeId: string;
 };
 
-const mockRequests: MaintenanceRequest[] = [
-  { id: "1", assetTag: "AF-0114", issueDescription: "Screen flickering randomly", priority: "high", status: "pending", raisedBy: "Priya Singh" },
-  { id: "2", assetTag: "AF-0045", issueDescription: "Lamp replacement needed", priority: "medium", status: "in-progress", raisedBy: "Engineering Dept" },
-];
-
 export function MaintenanceWorkspace() {
-  const [requests, setRequests] = useState<MaintenanceRequest[]>(mockRequests);
+  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
+  
+  // Form State
+  const [assetId, setAssetId] = useState("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [issueDescription, setIssueDescription] = useState("");
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch("/api/maintenance");
+      if (res.ok) {
+        const { data } = await res.json();
+        setRequests(data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filtered = requests.filter((r) =>
-    `${r.assetTag} ${r.issueDescription} ${r.raisedBy}`.toLowerCase().includes(query.toLowerCase())
+    `${r.assetId} ${r.issueDescription}`.toLowerCase().includes(query.toLowerCase())
   );
 
-  const handleRaise = (e: React.FormEvent) => {
+  const handleRaise = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Request Raised! It is pending approval.");
+    const res = await fetch("/api/maintenance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assetId, priority, issueDescription }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Request failed: ${err.error || "Unknown error"}`);
+      return;
+    }
+
     setShowForm(false);
+    setAssetId("");
+    setPriority("medium");
+    setIssueDescription("");
+    fetchData();
+  };
+
+  const handleReview = async (id: string, status: "approved" | "rejected") => {
+    const res = await fetch(`/api/maintenance/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    
+    if (res.ok) {
+       fetchData();
+    } else {
+       const err = await res.json();
+       alert(`Failed: ${err.error}`);
+    }
   };
 
   return (
@@ -57,17 +103,18 @@ export function MaintenanceWorkspace() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleRaise} className="grid gap-3 md:grid-cols-2">
-              <Input placeholder="Asset Tag (e.g. AF-0114)" required />
-              <select className="h-9 rounded-md border bg-background px-3 text-sm" required defaultValue="medium">
+              <Input placeholder="Asset ID (UUID)" value={assetId} onChange={e => setAssetId(e.target.value)} required />
+              <select className="h-9 rounded-md border bg-background px-3 text-sm" required value={priority} onChange={e => setPriority(e.target.value as any)}>
                 <option value="low">Low Priority</option>
                 <option value="medium">Medium Priority</option>
                 <option value="high">High Priority</option>
               </select>
               <div className="md:col-span-2">
-                <Textarea placeholder="Describe the issue..." required />
+                <Textarea placeholder="Describe the issue..." value={issueDescription} onChange={e => setIssueDescription(e.target.value)} required />
               </div>
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 flex gap-2">
                 <Button type="submit">Submit Request</Button>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
             </form>
           </CardContent>
@@ -86,7 +133,7 @@ export function MaintenanceWorkspace() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="pl-9"
-              placeholder="Search tag, description..."
+              placeholder="Search description..."
             />
           </div>
         </CardHeader>
@@ -94,9 +141,8 @@ export function MaintenanceWorkspace() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Asset Tag</TableHead>
+                <TableHead>Asset UUID</TableHead>
                 <TableHead>Issue</TableHead>
-                <TableHead>Raised By</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -105,9 +151,8 @@ export function MaintenanceWorkspace() {
             <TableBody>
               {filtered.map((req) => (
                 <TableRow key={req.id}>
-                  <TableCell className="font-medium">{req.assetTag}</TableCell>
+                  <TableCell className="font-medium text-xs">{req.assetId.substring(0,8)}...</TableCell>
                   <TableCell>{req.issueDescription}</TableCell>
-                  <TableCell>{req.raisedBy}</TableCell>
                   <TableCell>
                     <Badge variant={req.priority === "high" ? "destructive" : "secondary"}>
                       {req.priority}
@@ -117,20 +162,23 @@ export function MaintenanceWorkspace() {
                     <Badge variant="outline">
                       {req.status === "pending" && <Clock className="mr-1 size-3" />}
                       {req.status === "resolved" && <CheckCircle className="mr-1 size-3 text-green-500" />}
-                      {req.status === "in-progress" && <PenTool className="mr-1 size-3 text-blue-500" />}
+                      {(req.status === "in_progress" || req.status === "approved") && <PenTool className="mr-1 size-3 text-blue-500" />}
                       {req.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     {req.status === "pending" && (
-                      <Button variant="outline" size="sm">Review</Button>
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => handleReview(req.id, "approved")}>Approve</Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleReview(req.id, "rejected")}>Reject</Button>
+                      </>
                     )}
                   </TableCell>
                 </TableRow>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell className="py-8 text-center text-muted-foreground" colSpan={6}>
+                  <TableCell className="py-8 text-center text-muted-foreground" colSpan={5}>
                     No maintenance requests found.
                   </TableCell>
                 </TableRow>

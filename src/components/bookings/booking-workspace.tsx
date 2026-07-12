@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { CalendarDays, Plus, Search, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Search, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,24 +17,57 @@ type Booking = {
   status: string;
 };
 
-const mockBookings: Booking[] = [
-  { id: "1", resourceName: "Conference Room A", bookedBy: "Aarav Shah", startsAt: "2026-07-12T09:00:00Z", endsAt: "2026-07-12T10:00:00Z", status: "upcoming" },
-  { id: "2", resourceName: "Projector X1", bookedBy: "Meera Patel", startsAt: "2026-07-12T13:00:00Z", endsAt: "2026-07-12T15:00:00Z", status: "ongoing" },
-];
-
 export function BookingWorkspace() {
-  const [bookings, setBookings] = useState<Booking[]>(mockBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [resourceId, setResourceId] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch("/api/bookings");
+      if (res.ok) {
+        const { data } = await res.json();
+        setBookings(data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filtered = bookings.filter((b) =>
     `${b.resourceName} ${b.bookedBy}`.toLowerCase().includes(query.toLowerCase())
   );
 
-  const handleBook = (e: React.FormEvent) => {
+  const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Backend overlap validation: Two people can't book the same room at overlapping times.");
+    const res = await fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        resourceId,
+        startsAt: new Date(startsAt).toISOString(),
+        endsAt: new Date(endsAt).toISOString(),
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Booking failed: ${err.error || "Unknown error"}`);
+      return;
+    }
+
     setShowForm(false);
+    setResourceId("");
+    setStartsAt("");
+    setEndsAt("");
+    fetchData();
   };
 
   return (
@@ -55,12 +88,13 @@ export function BookingWorkspace() {
             <CardDescription>Select a resource and time slot.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleBook} className="grid gap-3 md:grid-cols-2">
-              <Input placeholder="Resource Name (e.g., Room B2)" required />
-              <Input type="datetime-local" required />
-              <Input type="datetime-local" required />
-              <div className="md:col-span-2">
+            <form onSubmit={handleBook} className="grid gap-3 md:grid-cols-3">
+              <Input placeholder="Resource ID (UUID)" value={resourceId} onChange={(e) => setResourceId(e.target.value)} required />
+              <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
+              <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required />
+              <div className="md:col-span-3 flex gap-2">
                 <Button type="submit">Confirm Booking</Button>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
             </form>
           </CardContent>

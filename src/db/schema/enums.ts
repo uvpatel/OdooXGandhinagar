@@ -10,4 +10,4 @@ export const maintenancePriorityEnum = pgEnum("maintenance_priority", ["low", "m
 export const auditCycleStatusEnum = pgEnum("audit_cycle_status", ["scheduled", "in_progress", "closed"]);
 export const auditItemResultEnum = pgEnum("audit_item_result", ["pending", "verified", "missing", "damaged"]);
 export const conditionEnum = pgEnum("condition", ["new", "good", "fair", "poor", "damaged"]);
-export const notificationTypeEnum = pgEnum("notification_type", ["asset_assigned", "maintenance_approved", "maintenance_rejected", "booking_confirmed", "booking_cancelled", "booking_reminder", "transfer_approved", "overdue_return", "audit_discrepancy"]);
+export const notificationTypeEnum = pgEnum("notification_type", ["asset_assigned", "maintenance_approved", "maintenance_rejected", "booking_confirmed", "booking_cancelled", "booking_reminder", "transfer_approved", "transfer_rejected", "overdue_return", "audit_discrepancy", "audit_assigned", "system_alert"]);

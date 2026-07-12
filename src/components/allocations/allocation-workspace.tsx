@@ -7,39 +7,97 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 
 type Allocation = {
   id: string;
   assetTag: string;
   assetName: string;
-  allocatedTo: string; // Employee or Department name
+  holder: string; // Employee or Department name
   allocatedAt: string;
   expectedReturnDate: string | null;
   status: string;
 };
 
-// Mock data for UI demonstration
-const mockAllocations: Allocation[] = [
-  { id: "1", assetTag: "AF-0012", assetName: "MacBook Pro M3", allocatedTo: "Meera Patel", allocatedAt: "2026-06-15T10:00:00Z", expectedReturnDate: null, status: "active" },
-  { id: "2", assetTag: "AF-0114", assetName: "Dell UltraSharp Monitor", allocatedTo: "Priya Singh", allocatedAt: "2026-06-20T09:30:00Z", expectedReturnDate: "2026-12-31T00:00:00Z", status: "active" },
-  { id: "3", assetTag: "AF-0045", assetName: "Projector X1", allocatedTo: "Engineering Dept", allocatedAt: "2026-07-01T14:15:00Z", expectedReturnDate: "2026-07-15T00:00:00Z", status: "overdue" },
-];
-
 export function AllocationWorkspace() {
-  const [allocations, setAllocations] = useState<Allocation[]>(mockAllocations);
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
 
+  // Form state
+  const [assetId, setAssetId] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
+  const [expectedReturnDate, setExpectedReturnDate] = useState("");
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch("/api/allocations");
+      if (res.ok) {
+        const { data } = await res.json();
+        setAllocations(data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const filtered = allocations.filter((a) =>
-    `${a.assetTag} ${a.assetName} ${a.allocatedTo}`.toLowerCase().includes(query.toLowerCase())
+    `${a.assetTag} ${a.assetName} ${a.holder}`.toLowerCase().includes(query.toLowerCase())
   );
 
-  const handleAllocate = (e: React.FormEvent) => {
+  const handleAllocate = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("This would trigger a backend check. If asset is already allocated, the system blocks it and offers a Transfer Request.");
+    const res = await fetch("/api/allocations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assetId, employeeId, expectedReturnDate: expectedReturnDate ? new Date(expectedReturnDate).toISOString() : undefined }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      if (err.error?.includes("ALREADY_ALLOCATED") || err.code === "ALREADY_ALLOCATED") {
+        if (confirm("Asset is already allocated. Create a Transfer Request instead?")) {
+           const transferRes = await fetch("/api/transfers", {
+             method: "POST",
+             headers: { "Content-Type": "application/json" },
+             body: JSON.stringify({ assetId, toEmployeeId: employeeId })
+           });
+           if (transferRes.ok) {
+             alert("Transfer requested successfully!");
+           } else {
+             const tErr = await transferRes.json();
+             alert(`Transfer failed: ${tErr.error}`);
+           }
+        }
+      } else {
+        alert(`Allocation failed: ${err.error || "Unknown error"}`);
+      }
+      return;
+    }
+    
     setShowForm(false);
+    setAssetId("");
+    setEmployeeId("");
+    setExpectedReturnDate("");
+    fetchData();
+  };
+
+  const handleReturn = async (id: string) => {
+    const res = await fetch(`/api/allocations/${id}/return`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ returnConditionNotes: "Returned in good condition" })
+    });
+    if (res.ok) {
+      fetchData();
+    } else {
+      const err = await res.json();
+      alert(`Return failed: ${err.error}`);
+    }
   };
 
   return (
@@ -64,11 +122,12 @@ export function AllocationWorkspace() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAllocate} className="grid gap-3 md:grid-cols-2">
-              <Input placeholder="Asset Tag (e.g. AF-0114)" required />
-              <Input placeholder="Assign to (Employee or Dept ID)" required />
-              <Input type="date" placeholder="Expected Return Date" />
-              <div className="md:col-span-2">
+              <Input placeholder="Asset ID (UUID)" value={assetId} onChange={e => setAssetId(e.target.value)} required />
+              <Input placeholder="Assign to Employee ID (UUID)" value={employeeId} onChange={e => setEmployeeId(e.target.value)} required />
+              <Input type="date" placeholder="Expected Return Date" value={expectedReturnDate} onChange={e => setExpectedReturnDate(e.target.value)} />
+              <div className="md:col-span-2 flex gap-2">
                 <Button type="submit">Allocate Asset</Button>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
             </form>
           </CardContent>
@@ -108,7 +167,7 @@ export function AllocationWorkspace() {
                 <TableRow key={allocation.id}>
                   <TableCell className="font-medium">{allocation.assetTag}</TableCell>
                   <TableCell>{allocation.assetName}</TableCell>
-                  <TableCell>{allocation.allocatedTo}</TableCell>
+                  <TableCell>{allocation.holder}</TableCell>
                   <TableCell>
                     {allocation.expectedReturnDate
                       ? format(new Date(allocation.expectedReturnDate), "MMM d, yyyy")
@@ -120,7 +179,7 @@ export function AllocationWorkspace() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">Return</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleReturn(allocation.id)}>Return</Button>
                   </TableCell>
                 </TableRow>
               ))}

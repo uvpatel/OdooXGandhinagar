@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Search, ClipboardCheck, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,31 +12,75 @@ import { format } from "date-fns";
 type AuditCycle = {
   id: string;
   name: string;
-  scope: string;
+  scopeLocation: string | null;
+  departmentName: string | null;
   startDate: string;
   endDate: string;
   status: string;
-  assignedAuditors: string;
 };
 
-const mockAudits: AuditCycle[] = [
-  { id: "1", name: "Q3 IT Assets Audit", scope: "Engineering Dept", startDate: "2026-07-01T00:00:00Z", endDate: "2026-07-15T00:00:00Z", status: "active", assignedAuditors: "Aarav Shah" },
-  { id: "2", name: "Annual Facility Audit", scope: "All Locations", startDate: "2025-12-01T00:00:00Z", endDate: "2025-12-31T00:00:00Z", status: "completed", assignedAuditors: "Meera Patel" },
-];
-
 export function AuditWorkspace() {
-  const [audits, setAudits] = useState<AuditCycle[]>(mockAudits);
+  const [audits, setAudits] = useState<AuditCycle[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
 
+  // Form State
+  const [name, setName] = useState("");
+  const [scopeDepartmentId, setScopeDepartmentId] = useState("");
+  const [scopeLocation, setScopeLocation] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [auditorEmployeeIds, setAuditorEmployeeIds] = useState("");
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch("/api/audits");
+      if (res.ok) {
+        const { data } = await res.json();
+        setAudits(data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const filtered = audits.filter((a) =>
-    `${a.name} ${a.scope} ${a.assignedAuditors}`.toLowerCase().includes(query.toLowerCase())
+    `${a.name} ${a.scopeLocation} ${a.departmentName}`.toLowerCase().includes(query.toLowerCase())
   );
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Audit cycle created!");
+    const res = await fetch("/api/audits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        scopeDepartmentId: scopeDepartmentId || undefined,
+        scopeLocation: scopeLocation || undefined,
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
+        auditorEmployeeIds: auditorEmployeeIds.split(",").map(s => s.trim()).filter(Boolean)
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Error creating audit: ${err.error || "Unknown error"}`);
+      return;
+    }
+
     setShowForm(false);
+    setName("");
+    setScopeDepartmentId("");
+    setScopeLocation("");
+    setStartDate("");
+    setEndDate("");
+    setAuditorEmployeeIds("");
+    fetchData();
   };
 
   return (
@@ -58,15 +102,17 @@ export function AuditWorkspace() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreate} className="grid gap-3 md:grid-cols-2">
-              <Input placeholder="Cycle Name (e.g. Q4 Asset Verification)" required />
-              <Input placeholder="Scope (Department or Location)" required />
-              <div className="flex gap-2">
-                <Input type="date" placeholder="Start Date" required />
-                <Input type="date" placeholder="End Date" required />
+              <Input placeholder="Cycle Name (e.g. Q4 Asset Verification)" value={name} onChange={e => setName(e.target.value)} required />
+              <Input placeholder="Scope Department ID (Optional)" value={scopeDepartmentId} onChange={e => setScopeDepartmentId(e.target.value)} />
+              <Input placeholder="Scope Location (Optional)" value={scopeLocation} onChange={e => setScopeLocation(e.target.value)} />
+              <Input placeholder="Auditor Employee IDs (comma separated)" value={auditorEmployeeIds} onChange={e => setAuditorEmployeeIds(e.target.value)} required />
+              <div className="flex gap-2 md:col-span-2">
+                <Input type="date" placeholder="Start Date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+                <Input type="date" placeholder="End Date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
               </div>
-              <Input placeholder="Assign Auditors (Email or ID)" required />
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 flex gap-2">
                 <Button type="submit">Create Cycle</Button>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
             </form>
           </CardContent>
@@ -96,7 +142,6 @@ export function AuditWorkspace() {
                 <TableHead>Cycle Name</TableHead>
                 <TableHead>Scope</TableHead>
                 <TableHead>Timeline</TableHead>
-                <TableHead>Auditors</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -105,13 +150,12 @@ export function AuditWorkspace() {
               {filtered.map((audit) => (
                 <TableRow key={audit.id}>
                   <TableCell className="font-medium">{audit.name}</TableCell>
-                  <TableCell>{audit.scope}</TableCell>
+                  <TableCell>{audit.departmentName || audit.scopeLocation || "All Assets"}</TableCell>
                   <TableCell>
                     {format(new Date(audit.startDate), "MMM d, yy")} - {format(new Date(audit.endDate), "MMM d, yy")}
                   </TableCell>
-                  <TableCell>{audit.assignedAuditors}</TableCell>
                   <TableCell>
-                    <Badge variant={audit.status === "active" ? "default" : "secondary"}>
+                    <Badge variant={audit.status === "scheduled" ? "default" : "secondary"}>
                       {audit.status}
                     </Badge>
                   </TableCell>
@@ -122,7 +166,7 @@ export function AuditWorkspace() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell className="py-8 text-center text-muted-foreground" colSpan={6}>
+                  <TableCell className="py-8 text-center text-muted-foreground" colSpan={5}>
                     No audit cycles found.
                   </TableCell>
                 </TableRow>
