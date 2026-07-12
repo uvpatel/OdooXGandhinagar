@@ -1,3 +1,5 @@
-import { BookOpenCheck } from "lucide-react";
-import { ModulePage } from "@/components/app/module-page";
-export default function AllocationsPage() { return <ModulePage title="Allocations & transfers" description="Allocate assets to people or departments, handle returns, and route transfer requests without double allocation." icon={BookOpenCheck} primaryAction="Allocate asset" metrics={[{ label: "Active allocations", value: "13", detail: "One active holder per asset" }, { label: "Overdue returns", value: "2", detail: "Require follow-up" }, { label: "Pending transfers", value: "3", detail: "Awaiting approval" }]} />; }
+import { AllocationWorkspace } from "@/components/allocations/allocation-workspace"
+
+export default function AllocationsPage() {
+  return <AllocationWorkspace />
+}

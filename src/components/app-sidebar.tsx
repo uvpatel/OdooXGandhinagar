@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bell, BookOpenCheck, Building2, CalendarDays, ClipboardCheck, Command, LayoutDashboard, Package, Settings, Wrench } from "lucide-react";
+import { Bell, BookOpenCheck, Building2, CalendarDays, ClipboardCheck, Command, LayoutDashboard, Package, Settings, Wrench, BarChart3, Activity } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
@@ -16,6 +16,8 @@ const navigation = [
   { title: "Bookings", url: "/bookings", icon: <CalendarDays /> },
   { title: "Maintenance", url: "/maintenance", icon: <Wrench /> },
   { title: "Audits", url: "/audits", icon: <ClipboardCheck /> },
+  { title: "Reports", url: "/reports", icon: <BarChart3 /> },
+  { title: "Activity Logs", url: "/activity", icon: <Activity /> },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

@@ -88,6 +88,11 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 import { authClient } from "@/lib/auth-client"
+import {
+  getAuthErrorMessage,
+  hasSessionToken,
+  responseErrorMessage,
+} from "@/lib/auth-response"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -95,19 +100,12 @@ import { Input } from "@/components/ui/input"
 export function LoginForm() {
   const router = useRouter()
 
-  const [email, setEmail] =
-    useState("")
-
-  const [password, setPassword] =
-    useState("")
-
-  const [loading, setLoading] =
-    useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  async function handleSubmit(
-    e: React.FormEvent
-  ) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
 
@@ -118,29 +116,40 @@ export function LoginForm() {
         email,
         password,
       })
-      if (response.error) {
-        setError(response.error.message || "Invalid email or password.")
+
+      const message = responseErrorMessage(response, "Invalid email or password.")
+      if (message) {
+        setError(message)
         return
       }
 
-      router.push("/dashboard")
+      if (!hasSessionToken(response)) {
+        setError("Signed in response did not include a session. Please try again.")
+        return
+      }
+
+      router.replace("/dashboard")
       router.refresh()
-    } catch {
-      setError("Unable to sign in. Please try again.")
+    } catch (error: unknown) {
+      setError(getAuthErrorMessage(error, "Unable to sign in. Please try again."))
     } finally {
       setLoading(false)
     }
   }
 
-  async function social(
-    provider: "github" | "google"
-  ) {
+  async function social(provider: "github" | "google") {
     setError("")
-    const response = await authClient.signIn.social({
-      provider,
-      callbackURL: "/dashboard",
-    })
-    if (response.error) setError(response.error.message || `Unable to continue with ${provider}.`)
+
+    try {
+      const response = await authClient.signIn.social({
+        provider,
+        callbackURL: "/dashboard",
+      })
+      const message = responseErrorMessage(response, `Unable to continue with ${provider}.`)
+      if (message) setError(message)
+    } catch (error: unknown) {
+      setError(getAuthErrorMessage(error, `Unable to continue with ${provider}.`))
+    }
   }
 
   return (
@@ -152,9 +161,7 @@ export function LoginForm() {
         required
         placeholder="Email"
         value={email}
-        onChange={(e) =>
-          setEmail(e.target.value)
-        }
+        onChange={(e) => setEmail(e.target.value)}
       />
 
       <Input
@@ -162,18 +169,14 @@ export function LoginForm() {
         type="password"
         placeholder="Password"
         value={password}
-        onChange={(e) =>
-          setPassword(e.target.value)
-        }
+        onChange={(e) => setPassword(e.target.value)}
       />
 
       <Button
         disabled={loading}
         className="w-full"
       >
-        {loading
-          ? "Signing in..."
-          : "Login"}
+        {loading ? "Signing in..." : "Login"}
       </Button>
 
       {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
@@ -182,9 +185,7 @@ export function LoginForm() {
         type="button"
         variant="outline"
         className="w-full"
-        onClick={() =>
-          social("github")
-        }
+        onClick={() => social("github")}
       >
         Continue with GitHub
       </Button>
@@ -193,9 +194,7 @@ export function LoginForm() {
         type="button"
         variant="outline"
         className="w-full"
-        onClick={() =>
-          social("google")
-        }
+        onClick={() => social("google")}
       >
         Continue with Google
       </Button>

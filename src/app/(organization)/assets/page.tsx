@@ -1,5 +1,5 @@
-import { AssetDirectory } from "@/components/assets/asset-directory";
+import { AssetDirectory } from "@/components/assets/asset-directory"
 
 export default function AssetsPage() {
-  return <AssetDirectory />;
+  return <AssetDirectory />
 }

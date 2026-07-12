@@ -1,34 +1,19 @@
-import { requireUnAuth } from "@/lib/auth-guard"
 import { SignupForm } from "@/components/signup-form"
-import { Command } from "lucide-react"
 
-export default async function SignupPage() {
-  await requireUnAuth()
+export default function SignupPage() {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <a href="#" className="flex items-center gap-2 font-medium">
-            <div className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Command className="size-4" />
-            </div>
-            AssetFlow
-          </a>
-        </div>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-sm">
-            <h1 className="mb-2 text-2xl font-semibold">Create your employee account</h1>
-            <p className="mb-6 text-sm text-muted-foreground">Accounts start as employees. Administrators assign elevated roles later.</p>
-            <SignupForm />
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <div className="w-full max-w-md space-y-8 rounded-lg border bg-background p-8 shadow-lg">
+        <div className="text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border bg-primary/10 mb-4">
+            <span className="font-bold text-primary">AF</span>
           </div>
+          <h1 className="text-2xl font-bold tracking-tight">Create an Account</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Sign up creates an employee account. Admin roles are assigned later.
+          </p>
         </div>
-      </div>
-      <div className="relative hidden bg-muted lg:block">
-        <img
-          src="/placeholder.svg"
-          alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        />
+        <SignupForm />
       </div>
     </div>
   )
