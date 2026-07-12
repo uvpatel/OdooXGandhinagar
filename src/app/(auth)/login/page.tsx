@@ -1,6 +1,6 @@
 import { requireUnAuth } from "@/lib/auth-guard"
 import { LoginForm } from "@/components/login-form"
-import { GalleryVerticalEndIcon } from "lucide-react"
+import { Command } from "lucide-react"
 
 export default async function LoginPage() {
   await requireUnAuth()
@@ -9,14 +9,16 @@ export default async function LoginPage() {
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
           <a href="#" className="flex items-center gap-2 font-medium">
-            <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <GalleryVerticalEndIcon className="size-4" />
+            <div className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Command className="size-4" />
             </div>
-            Acme Inc.
+            AssetFlow
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
+          <div className="w-full max-w-sm">
+            <h1 className="mb-2 text-2xl font-semibold">Welcome back</h1>
+            <p className="mb-6 text-sm text-muted-foreground">Sign in to manage your organization’s assets and resources.</p>
             <LoginForm />
           </div>
         </div>

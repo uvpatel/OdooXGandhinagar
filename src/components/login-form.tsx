@@ -103,24 +103,30 @@ export function LoginForm() {
 
   const [loading, setLoading] =
     useState(false)
+  const [error, setError] = useState("")
 
   async function handleSubmit(
     e: React.FormEvent
   ) {
     e.preventDefault()
+    setError("")
 
     try {
       setLoading(true)
 
-      await authClient.signIn.email({
+      const response = await authClient.signIn.email({
         email,
         password,
       })
+      if (response.error) {
+        setError(response.error.message || "Invalid email or password.")
+        return
+      }
 
-      router.push("/")
+      router.push("/dashboard")
       router.refresh()
     } catch {
-      alert("Invalid credentials")
+      setError("Unable to sign in. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -129,10 +135,12 @@ export function LoginForm() {
   async function social(
     provider: "github" | "google"
   ) {
-    await authClient.signIn.social({
+    setError("")
+    const response = await authClient.signIn.social({
       provider,
-      callbackURL: "/",
+      callbackURL: "/dashboard",
     })
+    if (response.error) setError(response.error.message || `Unable to continue with ${provider}.`)
   }
 
   return (
@@ -141,6 +149,7 @@ export function LoginForm() {
       className="space-y-4"
     >
       <Input
+        required
         placeholder="Email"
         value={email}
         onChange={(e) =>
@@ -149,6 +158,7 @@ export function LoginForm() {
       />
 
       <Input
+        required
         type="password"
         placeholder="Password"
         value={password}
@@ -165,6 +175,8 @@ export function LoginForm() {
           ? "Signing in..."
           : "Login"}
       </Button>
+
+      {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
       <Button
         type="button"

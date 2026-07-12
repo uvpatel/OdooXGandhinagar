@@ -30,3 +30,6 @@ export function assertDatabaseConfigured() {
     throw new Error("DATABASE_URL must be a valid postgresql:// Neon connection string.");
   }
 }
+
+
+

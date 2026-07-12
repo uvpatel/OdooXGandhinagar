@@ -30,11 +30,13 @@ export function SignupForm() {
   const [loading,
     setLoading] =
     useState(false)
+  const [error, setError] = useState("")
 
   async function submit(
     e: React.FormEvent
   ) {
     e.preventDefault()
+    setError("")
 
     const fd =
       new FormData(
@@ -59,9 +61,8 @@ export function SignupForm() {
       password !==
       confirm
     ) {
-      return alert(
-        "Passwords mismatch"
-      )
+      setError("Passwords do not match.")
+      return
     }
 
     try {
@@ -69,7 +70,7 @@ export function SignupForm() {
         true
       )
 
-      await authClient.signUp.email(
+      const response = await authClient.signUp.email(
         {
           name:
             String(
@@ -88,11 +89,15 @@ export function SignupForm() {
           password,
         }
       )
+      if (response.error) {
+        setError(response.error.message || "Unable to create your account.")
+        return
+      }
 
-      router.push("/")
+      router.push("/dashboard")
       router.refresh()
     } catch (error: unknown) {
-      alert(error instanceof Error ? error.message : "Something went wrong. Please try again.")
+      setError(error instanceof Error ? error.message : "Something went wrong. Please try again.")
     } finally {
       setLoading(
         false
@@ -110,21 +115,27 @@ export function SignupForm() {
       <Input
         name="name"
         placeholder="Name"
+        required
       />
 
       <Input
         name="email"
         type="email"
+        required
       />
 
       <Input
         name="password"
         type="password"
+        minLength={8}
+        required
       />
 
       <Input
         name="confirm"
         type="password"
+        minLength={8}
+        required
       />
 
       <Button
@@ -135,6 +146,8 @@ export function SignupForm() {
       >
         Create Account
       </Button>
+
+      {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
       <p>
         Already
