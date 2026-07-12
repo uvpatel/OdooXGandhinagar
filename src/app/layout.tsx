@@ -53,14 +53,12 @@ export const metadata: Metadata = {
 };
 
 import { TooltipProvider } from "@/components/ui/tooltip"
-import FloatingNavDemo from "@/components/floating-navbar-demo";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning={true}> 
-      <body>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <TooltipProvider>
-          <FloatingNavDemo />
           {children}</TooltipProvider>
       </body>
     </html>

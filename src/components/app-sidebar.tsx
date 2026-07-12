@@ -6,6 +6,7 @@ import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { authClient } from "@/lib/auth-client";
 
 const navigation = [
   { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboard /> },
@@ -18,6 +19,9 @@ const navigation = [
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: session } = authClient.useSession();
+  const currentUser = session?.user;
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -33,7 +37,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navigation} />
         <NavSecondary className="mt-auto" items={[{ title: "Notifications", url: "/notifications", icon: <Bell /> }, { title: "Settings", url: "/organization", icon: <Settings /> }]} />
       </SidebarContent>
-      <SidebarFooter><NavUser user={{ name: "Signed-in user", email: "Manage account", avatar: "" }} /></SidebarFooter>
+      <SidebarFooter><NavUser user={{ name: currentUser?.name || "Signed-in user", email: currentUser?.email || "Manage account", avatar: currentUser?.image || "" }} /></SidebarFooter>
     </Sidebar>
   );
 }
