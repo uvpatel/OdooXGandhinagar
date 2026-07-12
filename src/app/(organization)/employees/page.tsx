@@ -1,7 +1,3 @@
-import React from 'react'
+import { OrganizationWorkspace } from "@/components/organization/organization-workspace";
 
-export default function EmployeesPage() {
-  return (
-    <div>EmployeesPage</div>
-  )
-}
+export default function EmployeesPage() { return <OrganizationWorkspace />; }

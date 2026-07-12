@@ -47,11 +47,11 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                <Link href={item.url} > 
-                {item.icon}
+              <SidebarMenuButton asChild tooltip={item.title}>
+                <Link href={item.url}>
+                  {item.icon}
+                  <span>{item.title}</span>
                 </Link>
-                <span>{item.title}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

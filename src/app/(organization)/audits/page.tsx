@@ -1,0 +1,3 @@
+import { ClipboardCheck } from "lucide-react";
+import { ModulePage } from "@/components/app/module-page";
+export default function AuditsPage() { return <ModulePage title="Asset audits" description="Create verification cycles, assign auditors, record findings, and resolve discrepancies with a locked audit trail." icon={ClipboardCheck} primaryAction="Create audit cycle" metrics={[{ label: "Scheduled cycles", value: "2", detail: "Ready to begin" }, { label: "Assets to verify", value: "37", detail: "Across active audit scopes" }, { label: "Discrepancies", value: "1", detail: "Needs manager resolution" }]} />; }

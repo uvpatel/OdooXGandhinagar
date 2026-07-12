@@ -1,0 +1,3 @@
+import { Wrench } from "lucide-react";
+import { ModulePage } from "@/components/app/module-page";
+export default function MaintenancePage() { return <ModulePage title="Maintenance management" description="Raise, approve, assign, and resolve repairs while keeping each asset’s lifecycle status accurate." icon={Wrench} primaryAction="Raise request" metrics={[{ label: "Pending approval", value: "3", detail: "Awaiting asset manager review" }, { label: "In progress", value: "2", detail: "Technicians are assigned" }, { label: "Resolved this month", value: "9", detail: "Available again after check-in" }]} />; }
