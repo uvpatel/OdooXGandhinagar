@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { db } from "@/index"
 import * as schema from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, count } from "drizzle-orm"
 import { sendWelcomeEmail, sendOTPEmail } from "./email"
 import { emailOTP } from "better-auth/plugins"
 
@@ -38,11 +38,14 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (newUser) => {
+          const existing = await db.select({ count: count() }).from(schema.employees);
+          const isFirst = Number(existing[0].count) === 0;
+
           await db.insert(schema.employees).values({
             userId: newUser.id,
             name: newUser.name,
             email: newUser.email,
-            role: "employee",
+            role: isFirst ? "admin" : "employee",
           }).onConflictDoNothing({ target: schema.employees.userId });
         },
       },

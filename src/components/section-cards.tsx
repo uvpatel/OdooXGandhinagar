@@ -5,13 +5,22 @@ import {
   Card,
   CardAction,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Package, BookOpenCheck, Wrench, CalendarDays, ArrowRightLeft, AlertCircle } from "lucide-react"
 
-export function SectionCards() {
+export type DashboardStats = {
+  assetsAvailable: number;
+  assetsAllocated: number;
+  maintenanceToday: number;
+  activeBookings: number;
+  pendingTransfers: number;
+  upcomingReturns: number;
+  overdueReturns: number;
+}
+
+export function SectionCards({ stats }: { stats: DashboardStats }) {
   return (
     <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 dark:*:data-[slot=card]:bg-card">
       {/* Assets Available */}
@@ -19,7 +28,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Assets Available</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            1,245
+            {stats.assetsAvailable}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
@@ -35,7 +44,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Assets Allocated</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            856
+            {stats.assetsAllocated}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -51,7 +60,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Maintenance Today</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            12
+            {stats.maintenanceToday}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
@@ -67,7 +76,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Active Bookings</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            34
+            {stats.activeBookings}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
@@ -83,7 +92,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Pending Transfers</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            8
+            {stats.pendingTransfers}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
@@ -98,13 +107,13 @@ export function SectionCards() {
       <Card className="@container/card border-destructive/50">
         <CardHeader>
           <CardDescription>Upcoming Returns</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl text-destructive">
-            23
+          <CardTitle className={`text-2xl font-semibold tabular-nums @[250px]/card:text-3xl ${stats.overdueReturns > 0 ? "text-destructive" : ""}`}>
+            {stats.upcomingReturns + stats.overdueReturns}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+            <Badge variant="outline" className={stats.overdueReturns > 0 ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-muted/50 text-muted-foreground border-border"}>
               <AlertCircle className="mr-1 size-3" />
-              5 Overdue
+              {stats.overdueReturns} Overdue
             </Badge>
           </CardAction>
         </CardHeader>
