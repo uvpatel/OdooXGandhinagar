@@ -27,10 +27,6 @@ export const auth = betterAuth({
 
   user: {
     additionalFields: {
-      role: {
-        type: "string",
-        defaultValue: "user",
-      },
       lastLoginAt: {
         type: "date",
         required: false,
@@ -39,6 +35,18 @@ export const auth = betterAuth({
   },
 
   databaseHooks: {
+    user: {
+      create: {
+        after: async (newUser) => {
+          await db.insert(schema.employees).values({
+            userId: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            role: "employee",
+          }).onConflictDoNothing({ target: schema.employees.userId });
+        },
+      },
+    },
     session: {
       create: {
         after: async (session) => {
