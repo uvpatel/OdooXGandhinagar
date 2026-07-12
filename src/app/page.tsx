@@ -1,5 +1,6 @@
 
 import BackgroundLinesDemo from "@/components/background-lines-demo";
+import NoiseBackgroundDemo from "@/components/noise-background-demo";
 
 import { UserButton } from "@/components/user-button";
 
