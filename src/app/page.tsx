@@ -1,11 +1,8 @@
 
-import AnimatedTestimonialsDemo from "@/components/animated-testimonials-demo";
 import BackgroundLinesDemo from "@/components/background-lines-demo";
-import MacbookScrollDemo from "@/components/macbook-scroll-demo";
-import ParallaxHeroImagesDemo from "@/components/parallax-hero-images-demo";
-import TerminalDemo from "@/components/terminal-demo";
+
 import { UserButton } from "@/components/user-button";
-import Image from "next/image";
+
 
 export default function Home() {
   return (
@@ -15,9 +12,7 @@ export default function Home() {
       
       </header>
 <BackgroundLinesDemo />
-<TerminalDemo />
-<MacbookScrollDemo />
-<AnimatedTestimonialsDemo />
+
 </div>
   );
 }
