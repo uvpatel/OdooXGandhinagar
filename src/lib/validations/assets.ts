@@ -10,6 +10,6 @@ export const createAssetSchema = z.object({
   location: z.string().trim().min(2).max(160),
   departmentId: z.uuid().optional(),
   isBookable: z.boolean().default(false),
-  photoUrl: z.url().optional(),
+  photoUrl: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).default({}),
 });

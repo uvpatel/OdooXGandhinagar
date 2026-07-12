@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { boolean, date, index, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, index, jsonb, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { allocationStatusEnum, assetStatusEnum, conditionEnum, transferStatusEnum } from "./enums";
 import { assetCategories, departments, employees } from "./organization";
+export const assetRequestStatusEnum = pgEnum("asset_request_status", ["pending", "approved", "rejected"]);
 
 export const assets = pgTable("assets", {
   id: uuid("id").defaultRandom().primaryKey(), assetTag: text("asset_tag").notNull().unique(), name: text("name").notNull(),
@@ -18,6 +19,7 @@ export const allocations = pgTable("allocations", {
   id: uuid("id").defaultRandom().primaryKey(), assetId: uuid("asset_id").notNull().references(() => assets.id),
   employeeId: uuid("employee_id").references(() => employees.id), departmentId: uuid("department_id").references(() => departments.id),
   allocatedAt: timestamp("allocated_at").defaultNow().notNull(), expectedReturnDate: date("expected_return_date"), returnedAt: timestamp("returned_at"),
+  returnRequestedAt: timestamp("return_requested_at"),
   returnConditionNotes: text("return_condition_notes"), status: allocationStatusEnum("status").notNull().default("active"), createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [index("allocations_asset_status_idx").on(table.assetId, table.status), uniqueIndex("allocations_one_active_asset_idx").on(table.assetId).where(sql`status = 'active'`)]);
 
@@ -27,4 +29,11 @@ export const transfers = pgTable("transfers", {
   toEmployeeId: uuid("to_employee_id").references(() => employees.id), toDepartmentId: uuid("to_department_id").references(() => departments.id),
   status: transferStatusEnum("status").notNull().default("requested"), approvedByEmployeeId: uuid("approved_by_employee_id").references(() => employees.id),
   requestedAt: timestamp("requested_at").defaultNow().notNull(), resolvedAt: timestamp("resolved_at"),
+});
+
+export const assetRequests = pgTable("asset_requests", {
+  id: uuid("id").defaultRandom().primaryKey(), assetId: uuid("asset_id").notNull().references(() => assets.id),
+  employeeId: uuid("employee_id").notNull().references(() => employees.id),
+  status: assetRequestStatusEnum("status").notNull().default("pending"),
+  requestedAt: timestamp("requested_at").defaultNow().notNull(),
 });

@@ -19,7 +19,7 @@ type AuditCycle = {
   status: string;
 };
 
-export function AuditWorkspace() {
+export function AuditWorkspace({ role }: { role: string }) {
   const [audits, setAudits] = useState<AuditCycle[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -91,7 +91,11 @@ export function AuditWorkspace() {
           <h1 className="text-3xl font-semibold tracking-tight">Asset Audits</h1>
           <p className="mt-1 text-muted-foreground">Run scheduled audit cycles with auto-generated discrepancy reports.</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}><Plus className="size-4 mr-2" /> New Audit Cycle</Button>
+        {role === "admin" && (
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="size-4 mr-2" /> New Audit Cycle
+          </Button>
+        )}
       </div>
 
       {showForm && (

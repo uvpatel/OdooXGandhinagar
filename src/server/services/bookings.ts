@@ -1,11 +1,28 @@
 import { and, eq, gt, inArray, lt } from "drizzle-orm";
 import { db } from "@/index";
-import { bookings, resources } from "@/db/schema";
+import { bookings, resources, employees, departments } from "@/db/schema";
+import { sql } from "drizzle-orm";
 import { createBookingSchema } from "@/lib/validations/bookings";
 import { DomainError } from "@/server/http";
 import { logActivity, notify } from "./activity";
 
-export async function listBookings() { return db.select({ id: bookings.id, resourceName: resources.name, startsAt: bookings.startsAt, endsAt: bookings.endsAt, status: bookings.status }).from(bookings).innerJoin(resources, eq(bookings.resourceId, resources.id)); }
+export async function listBookings() { 
+  return db.select({ 
+    id: bookings.id, 
+    resourceName: resources.name, 
+    bookedBy: sql<string>`COALESCE(${departments.name}, ${employees.name})`,
+    startsAt: bookings.startsAt, 
+    endsAt: bookings.endsAt, 
+    status: bookings.status 
+  }).from(bookings)
+  .innerJoin(resources, eq(bookings.resourceId, resources.id))
+  .innerJoin(employees, eq(bookings.bookedByEmployeeId, employees.id))
+  .leftJoin(departments, eq(bookings.departmentId, departments.id)); 
+}
+
+export async function listResources() {
+  return db.select().from(resources);
+}
 
 export async function createBooking(input: unknown, actorEmployeeId: string) {
   const parsed = createBookingSchema.safeParse(input);

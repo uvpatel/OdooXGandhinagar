@@ -16,12 +16,15 @@ type MaintenanceRequest = {
   priority: "low" | "medium" | "high";
   status: "pending" | "approved" | "in_progress" | "resolved" | "rejected";
   raisedByEmployeeId: string;
+  technicianName?: string;
 };
 
-export function MaintenanceWorkspace() {
+export function MaintenanceWorkspace({ role }: { role: string }) {
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
+  const [assets, setAssets] = useState<any[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const convertToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result as string); reader.onerror = (err) => reject(err); });
   
   // Form State
   const [assetId, setAssetId] = useState("");
@@ -30,10 +33,17 @@ export function MaintenanceWorkspace() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/maintenance");
-      if (res.ok) {
-        const { data } = await res.json();
+      const [reqRes, assetRes] = await Promise.all([
+        fetch("/api/maintenance"),
+        fetch("/api/assets")
+      ]);
+      if (reqRes.ok) {
+        const { data } = await reqRes.json();
         setRequests(data || []);
+      }
+      if (assetRes.ok) {
+        const { data } = await assetRes.json();
+        setAssets(data || []);
       }
     } catch (e) {
       console.error(e);
@@ -48,12 +58,18 @@ export function MaintenanceWorkspace() {
     `${r.assetId} ${r.issueDescription}`.toLowerCase().includes(query.toLowerCase())
   );
 
-  const handleRaise = async (e: React.FormEvent) => {
+  const handleRaise = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
+    let photoUrl = undefined;
+    const photoFile = form.get("photo") as File | null;
+    if (photoFile && photoFile.size > 0) { photoUrl = await convertToBase64(photoFile); }
+
     const res = await fetch("/api/maintenance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assetId, priority, issueDescription }),
+      body: JSON.stringify({ assetId, priority, issueDescription, photoUrl }),
     });
 
     if (!res.ok) {
@@ -70,12 +86,34 @@ export function MaintenanceWorkspace() {
   };
 
   const handleReview = async (id: string, status: "approved" | "rejected") => {
+    let technicianName = undefined;
+    if (status === "approved") {
+      technicianName = prompt("Assign Technician Name (e.g. John Doe):");
+      if (!technicianName) {
+        alert("Technician assignment is required to approve.");
+        return;
+      }
+    }
     const res = await fetch(`/api/maintenance/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status, technicianName })
     });
     
+    if (res.ok) {
+       fetchData();
+    } else {
+       const err = await res.json();
+       alert(`Failed: ${err.error}`);
+    }
+  };
+
+  const handleResolve = async (id: string) => {
+    const res = await fetch(`/api/maintenance/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "resolved" })
+    });
     if (res.ok) {
        fetchData();
     } else {
@@ -103,14 +141,27 @@ export function MaintenanceWorkspace() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleRaise} className="grid gap-3 md:grid-cols-2">
-              <Input placeholder="Asset ID (UUID)" value={assetId} onChange={e => setAssetId(e.target.value)} required />
-              <select className="h-9 rounded-md border bg-background px-3 text-sm" required value={priority} onChange={e => setPriority(e.target.value as any)}>
+              <select className="h-9 w-full rounded-md border bg-background px-3 text-sm" required value={assetId} onChange={e => setAssetId(e.target.value)}>
+                {assets.length === 0 ? (
+                  <option value="" disabled>No assets allocated to you</option>
+                ) : (
+                  <option value="" disabled>Select an Asset</option>
+                )}
+                {assets.map(a => (
+                  <option key={a.id} value={a.id}>{a.assetTag} - {a.name}</option>
+                ))}
+              </select>
+              <select className="h-9 w-full rounded-md border bg-background px-3 text-sm" required value={priority} onChange={e => setPriority(e.target.value as any)}>
                 <option value="low">Low Priority</option>
                 <option value="medium">Medium Priority</option>
                 <option value="high">High Priority</option>
               </select>
               <div className="md:col-span-2">
                 <Textarea placeholder="Describe the issue..." value={issueDescription} onChange={e => setIssueDescription(e.target.value)} required />
+              </div>
+              <div className="md:col-span-2 flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground">Upload Damage Photo (Optional)</span>
+                <Input name="photo" type="file" accept="image/*" className="cursor-pointer" />
               </div>
               <div className="md:col-span-2 flex gap-2">
                 <Button type="submit">Submit Request</Button>
@@ -152,7 +203,10 @@ export function MaintenanceWorkspace() {
               {filtered.map((req) => (
                 <TableRow key={req.id}>
                   <TableCell className="font-medium text-xs">{req.assetId.substring(0,8)}...</TableCell>
-                  <TableCell>{req.issueDescription}</TableCell>
+                  <TableCell>
+                    <div className="text-sm font-medium">{req.issueDescription}</div>
+                    {req.technicianName && <div className="text-xs text-muted-foreground mt-1">Tech: {req.technicianName}</div>}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={req.priority === "high" ? "destructive" : "secondary"}>
                       {req.priority}
@@ -166,12 +220,15 @@ export function MaintenanceWorkspace() {
                       {req.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {req.status === "pending" && (
+                  <TableCell className="text-right flex items-center justify-end gap-2">
+                    {req.status === "pending" && (role === "admin" || role === "asset_manager") && (
                       <>
                         <Button variant="ghost" size="sm" onClick={() => handleReview(req.id, "approved")}>Approve</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleReview(req.id, "rejected")}>Reject</Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleReview(req.id, "rejected")} className="text-red-500">Reject</Button>
                       </>
+                    )}
+                    {(req.status === "approved" || req.status === "in_progress") && (role === "admin" || role === "asset_manager") && (
+                      <Button variant="outline" size="sm" onClick={() => handleResolve(req.id)}>Mark Completed</Button>
                     )}
                   </TableCell>
                 </TableRow>

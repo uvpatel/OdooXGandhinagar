@@ -1,5 +1,7 @@
 import { AuditWorkspace } from "@/components/audits/audit-workspace"
+import { getCurrentEmployee } from "@/lib/auth/session"
 
-export default function AuditsPage() {
-  return <AuditWorkspace />
+export default async function AuditsPage() {
+  const employee = await getCurrentEmployee()
+  return <AuditWorkspace role={employee?.role || "employee"} />
 }

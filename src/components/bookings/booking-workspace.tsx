@@ -17,20 +17,29 @@ type Booking = {
   status: string;
 };
 
-export function BookingWorkspace() {
+export function BookingWorkspace({ role, departmentId }: { role: string; departmentId: string | null }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [resourceId, setResourceId] = useState("");
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
+  const [onBehalfOfDept, setOnBehalfOfDept] = useState(false);
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/bookings");
-      if (res.ok) {
-        const { data } = await res.json();
+      const [bookingsRes, resourcesRes] = await Promise.all([
+        fetch("/api/bookings"),
+        fetch("/api/resources")
+      ]);
+      if (bookingsRes.ok) {
+        const { data } = await bookingsRes.json();
         setBookings(data || []);
+      }
+      if (resourcesRes.ok) {
+        const { data } = await resourcesRes.json();
+        setResources(data || []);
       }
     } catch (e) {
       console.error(e);
@@ -52,6 +61,7 @@ export function BookingWorkspace() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         resourceId,
+        departmentId: (role === "department_head" && onBehalfOfDept) ? departmentId : undefined,
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
       }),
@@ -89,10 +99,26 @@ export function BookingWorkspace() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleBook} className="grid gap-3 md:grid-cols-3">
-              <Input placeholder="Resource ID (UUID)" value={resourceId} onChange={(e) => setResourceId(e.target.value)} required />
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={resourceId} 
+                onChange={(e) => setResourceId(e.target.value)} 
+                required
+              >
+                <option value="" disabled>Select a Resource</option>
+                {resources.map(r => (
+                  <option key={r.id} value={r.id}>{r.name} ({r.type}) - {r.location}</option>
+                ))}
+              </select>
               <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
               <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required />
-              <div className="md:col-span-3 flex gap-2">
+              {role === "department_head" && departmentId && (
+                <div className="md:col-span-3 flex items-center gap-2 mt-2">
+                  <input type="checkbox" id="deptBook" checked={onBehalfOfDept} onChange={(e) => setOnBehalfOfDept(e.target.checked)} className="size-4" />
+                  <label htmlFor="deptBook" className="text-sm font-medium">Book on behalf of my department</label>
+                </div>
+              )}
+              <div className="md:col-span-3 flex gap-2 mt-2">
                 <Button type="submit">Confirm Booking</Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>

@@ -5,8 +5,29 @@ import { createAllocationSchema } from "@/lib/validations/allocations";
 import { DomainError } from "@/server/http";
 import { logActivity, notify } from "./activity";
 
-export async function listAllocations() {
-  return db.select({ id: allocations.id, assetTag: assets.assetTag, assetName: assets.name, holder: employees.name, expectedReturnDate: allocations.expectedReturnDate, status: allocations.status }).from(allocations).innerJoin(assets, eq(allocations.assetId, assets.id)).leftJoin(employees, eq(allocations.employeeId, employees.id));
+export async function listAllocations(employee: { id: string; role: string; departmentId: string | null }) {
+  let query = db.select({ 
+    id: allocations.id, 
+    assetTag: assets.assetTag, 
+    assetName: assets.name, 
+    holder: employees.name, 
+    expectedReturnDate: allocations.expectedReturnDate, 
+    status: allocations.status,
+    returnRequestedAt: allocations.returnRequestedAt
+  })
+  .from(allocations)
+  .innerJoin(assets, eq(allocations.assetId, assets.id))
+  .leftJoin(employees, eq(allocations.employeeId, employees.id))
+  .$dynamic();
+
+  if (employee.role === "employee") {
+    query = query.where(eq(allocations.employeeId, employee.id));
+  } else if (employee.role === "department_head") {
+    // Show allocations where the employee's department matches OR the asset's department matches
+    query = query.where(eq(employees.departmentId, employee.departmentId!));
+  }
+
+  return query;
 }
 
 export async function allocateAsset(input: unknown, actorEmployeeId: string) {

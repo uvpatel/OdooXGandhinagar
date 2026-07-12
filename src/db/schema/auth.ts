@@ -40,7 +40,7 @@ export const verification = pgTable("verification", {
 }, (table) => [index("verification_identifier_idx").on(table.identifier)]);
 
 // Kept while the legacy tweet endpoint is retired; it is outside AssetFlow's domain.
-export const tweetTable = pgTable("tweet", {
-  tweetid: integer("tweetid").primaryKey().generatedAlwaysAsIdentity(),
-  desc: varchar("desc", { length: 255 }).notNull(),
-});
+// export const tweetTable = pgTable("tweet", {
+//   tweetid: integer("tweetid").primaryKey().generatedAlwaysAsIdentity(),
+//   desc: varchar("desc", { length: 255 }).notNull(),
+// });
