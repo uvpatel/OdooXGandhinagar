@@ -16,6 +16,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { LayoutDashboardIcon, ListIcon, ChartBarIcon, FolderIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, CircleHelpIcon, SearchIcon, DatabaseIcon, FileChartColumnIcon, FileIcon, CommandIcon } from "lucide-react"
+import { IconBasket, IconBuildingSkyscraper, IconHierarchy, IconUser } from "@tabler/icons-react"
 
 const data = {
   user: {
@@ -33,35 +34,33 @@ const data = {
       ),
     },
     {
-      title: "Lifecycle",
+      title: "Assets",
       url: "#",
       icon: (
-        <ListIcon
+        <IconBasket
         />
       ),
     },
     {
-      title: "Analytics",
+      title: "Departments",
       url: "#",
       icon: (
-        <ChartBarIcon
+        <IconBuildingSkyscraper
         />
       ),
     },
     {
-      title: "Projects",
+      title: "Hierarchy",
       url: "#",
       icon: (
-        <FolderIcon
-        />
+        <IconHierarchy />
       ),
     },
     {
-      title: "Team",
+      title: "Employees",
       url: "#",
       icon: (
-        <UsersIcon
-        />
+        <IconUser />
       ),
     },
   ],
