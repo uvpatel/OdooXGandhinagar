@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Department = { id: string; name: string; parentDepartmentId: string | null; headEmployeeId: string | null; status: "active" | "inactive" };
-type Category = { id: string; name: string; extraFieldsSchema: any };
+type Category = { id: string; name: string; extraFieldsSchema: Record<string, string> };
 type Employee = { id: string; name: string; email: string; departmentId: string | null; role: "employee" | "department_head" | "asset_manager" | "admin"; status: "active" | "inactive" };
 
 export function OrganizationWorkspace() {
@@ -58,8 +58,20 @@ export function OrganizationWorkspace() {
     fetchData();
   };
 
-  const addCategory = () => {
-    alert("Category creation API pending.");
+  const addCategory = async () => {
+    const name = window.prompt("Asset category name");
+    if (!name?.trim()) return;
+    const res = await fetch("/api/organization/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim() }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Error: ${err.error || "Failed to create asset category"}`);
+      return;
+    }
+    fetchData();
   };
 
   const addEmployee = () => {
