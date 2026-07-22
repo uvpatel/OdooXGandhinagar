@@ -12,6 +12,7 @@ const navigation = [
   { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboard /> },
   { title: "Organization", url: "/organization", icon: <Building2 /> },
   { title: "Assets", url: "/assets", icon: <Package /> },
+  { title: "Requests", url: "/requests", icon: <ClipboardCheck /> },
   { title: "Allocations", url: "/allocations", icon: <BookOpenCheck /> },
   { title: "Bookings", url: "/bookings", icon: <CalendarDays /> },
   { title: "Maintenance", url: "/maintenance", icon: <Wrench /> },

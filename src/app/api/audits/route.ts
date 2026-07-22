@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const employee = await requireApiEmployee(request, ["admin", "asset_manager"]);
+    const employee = await requireApiEmployee(request, ["admin"]);
     return NextResponse.json(
       { data: await createAuditCycle(await request.json(), employee.id) },
       { status: 201 }

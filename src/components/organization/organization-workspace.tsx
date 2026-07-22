@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Department = { id: string; name: string; parentDepartmentId: string | null; headEmployeeId: string | null; status: "active" | "inactive" };
 type Category = { id: string; name: string; extraFieldsSchema: Record<string, string> };
 type Employee = { id: string; name: string; email: string; departmentId: string | null; role: "employee" | "department_head" | "asset_manager" | "admin"; status: "active" | "inactive" };
 
-export function OrganizationWorkspace() {
+export function OrganizationWorkspace({ role }: { role: string }) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -59,16 +60,28 @@ export function OrganizationWorkspace() {
   };
 
   const addCategory = async () => {
+<<<<<<< HEAD
     const name = window.prompt("Asset category name");
+=======
+    const name = window.prompt("Category name (e.g. Computers, Furniture)");
+>>>>>>> be5363df8834695bafc6c882f13ccacf9a903af4
     if (!name?.trim()) return;
     const res = await fetch("/api/organization/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+<<<<<<< HEAD
       body: JSON.stringify({ name: name.trim() }),
     });
     if (!res.ok) {
       const err = await res.json();
       alert(`Error: ${err.error || "Failed to create asset category"}`);
+=======
+      body: JSON.stringify({ name: name.trim() })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Error: ${err.error || "Failed to create category"}`);
+>>>>>>> be5363df8834695bafc6c882f13ccacf9a903af4
       return;
     }
     fetchData();
@@ -78,9 +91,7 @@ export function OrganizationWorkspace() {
     alert("Employee creation requires authentication/invite flow.");
   };
 
-  const promoteEmployee = async (employeeId: string) => {
-    const role = window.prompt("Enter new role (admin, asset_manager, department_head, employee):");
-    if (!role) return;
+  const promoteEmployee = async (employeeId: string, role: string) => {
     const res = await fetch("/api/organization/roles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -121,7 +132,7 @@ export function OrganizationWorkspace() {
           <TabsTrigger value="employees">Employee directory</TabsTrigger>
         </TabsList>
         <TabsContent value="departments" className="mt-4">
-          <DirectoryCard title="Department management" description="Create teams, assign department heads, and maintain reporting lines." action="Add department" onAction={addDepartment}>
+          <DirectoryCard title="Department management" description="Create teams, assign department heads, and maintain reporting lines." action={role === "admin" ? "Add department" : undefined} onAction={addDepartment}>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -143,7 +154,7 @@ export function OrganizationWorkspace() {
           </DirectoryCard>
         </TabsContent>
         <TabsContent value="categories" className="mt-4">
-          <DirectoryCard title="Asset category management" description="Define reusable categories and their category-specific information." action="Add category" onAction={addCategory}>
+          <DirectoryCard title="Asset category management" description="Define reusable categories and their category-specific information." action={role === "admin" ? "Add category" : undefined} onAction={addCategory}>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -161,7 +172,7 @@ export function OrganizationWorkspace() {
           </DirectoryCard>
         </TabsContent>
         <TabsContent value="employees" className="mt-4">
-          <DirectoryCard title="Employee directory" description="New accounts are employees by default. Only an admin can promote a role here." action="Add employee" onAction={addEmployee}>
+          <DirectoryCard title="Employee directory" description="New accounts are employees by default. Only an admin can promote a role here." action={role === "admin" ? "Add employee" : undefined} onAction={addEmployee}>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -169,7 +180,6 @@ export function OrganizationWorkspace() {
                   <TableHead>Department</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -181,12 +191,23 @@ export function OrganizationWorkspace() {
                     </TableCell>
                     <TableCell>{departments.find((d) => d.id === item.departmentId)?.name || "—"}</TableCell>
                     <TableCell>
-                      <Badge variant={item.role === "employee" ? "outline" : "secondary"}>{item.role.replace("_", " ")}</Badge>
+                      {role === "admin" ? (
+                        <Select defaultValue={item.role} onValueChange={(val) => promoteEmployee(item.id, val)}>
+                          <SelectTrigger className="w-[160px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="employee">Employee</SelectItem>
+                            <SelectItem value="department_head">Department Head</SelectItem>
+                            <SelectItem value="asset_manager">Asset Manager</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant={item.role === "employee" ? "outline" : "secondary"}>{item.role.replace("_", " ")}</Badge>
+                      )}
                     </TableCell>
                     <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => promoteEmployee(item.id)}>Change Role</Button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -210,7 +231,7 @@ function SummaryCard({ icon, label, value, description }: { icon: React.ReactNod
   );
 }
 
-function DirectoryCard({ title, description, action, onAction, children }: { title: string; description: string; action: string; onAction: () => void; children: React.ReactNode }) {
+function DirectoryCard({ title, description, action, onAction, children }: { title: string; description: string; action?: string; onAction?: () => void; children: React.ReactNode }) {
   return (
     <Card>
       <CardHeader className="gap-3 sm:flex sm:flex-row sm:items-start sm:justify-between">
@@ -218,7 +239,7 @@ function DirectoryCard({ title, description, action, onAction, children }: { tit
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </div>
-        <Button onClick={onAction}><Plus className="mr-2 h-4 w-4" />{action}</Button>
+        {action && <Button onClick={onAction}><Plus className="mr-2 h-4 w-4" />{action}</Button>}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>

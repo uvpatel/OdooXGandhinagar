@@ -1,5 +1,7 @@
 import { MaintenanceWorkspace } from "@/components/maintenance/maintenance-workspace"
+import { getCurrentEmployee } from "@/lib/auth/session"
 
-export default function MaintenancePage() {
-  return <MaintenanceWorkspace />
+export default async function MaintenancePage() {
+  const employee = await getCurrentEmployee()
+  return <MaintenanceWorkspace role={employee?.role || "employee"} />
 }

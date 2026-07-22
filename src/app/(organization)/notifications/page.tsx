@@ -1,3 +1,2 @@
-import { Bell } from "lucide-react";
-import { ModulePage } from "@/components/app/module-page";
-export default function NotificationsPage() { return <ModulePage title="Notifications & activity" description="Stay current on assignments, booking changes, maintenance decisions, overdue returns, and audit discrepancies." icon={Bell} primaryAction="Mark all read" metrics={[{ label: "Unread", value: "6", detail: "Requires attention" }, { label: "Overdue alerts", value: "2", detail: "Allocation follow-up needed" }, { label: "Today’s activity", value: "18", detail: "Auditable system actions" }]} />; }
+import { NotificationsWorkspace } from "@/components/notifications/notifications-workspace";
+export default function NotificationsPage() { return <NotificationsWorkspace />; }

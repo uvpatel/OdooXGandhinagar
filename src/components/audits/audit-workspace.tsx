@@ -19,8 +19,10 @@ type AuditCycle = {
   status: string;
 };
 
-export function AuditWorkspace() {
+export function AuditWorkspace({ role }: { role: string }) {
   const [audits, setAudits] = useState<AuditCycle[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
 
@@ -34,10 +36,22 @@ export function AuditWorkspace() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/audits");
+      const [res, empRes, deptRes] = await Promise.all([
+        fetch("/api/audits"),
+        fetch("/api/organization/employees"),
+        fetch("/api/organization/departments")
+      ]);
       if (res.ok) {
         const { data } = await res.json();
         setAudits(data || []);
+      }
+      if (empRes.ok) {
+        const { data } = await empRes.json();
+        setEmployees(data || []);
+      }
+      if (deptRes.ok) {
+        const { data } = await deptRes.json();
+        setDepartments(data || []);
       }
     } catch (e) {
       console.error(e);
@@ -69,7 +83,12 @@ export function AuditWorkspace() {
 
     if (!res.ok) {
       const err = await res.json();
-      alert(`Error creating audit: ${err.error || "Unknown error"}`);
+      let errorMsg = err.error || "Unknown error";
+      if (err.details && err.details.fields) {
+          const fieldErrors = Object.entries(err.details.fields).map(([field, msgs]) => `${field}: ${(msgs as string[]).join(", ")}`).join(" | ");
+          errorMsg += `\n\nDetails: ${fieldErrors}`;
+      }
+      alert(`Error creating audit: ${errorMsg}`);
       return;
     }
 
@@ -91,7 +110,11 @@ export function AuditWorkspace() {
           <h1 className="text-3xl font-semibold tracking-tight">Asset Audits</h1>
           <p className="mt-1 text-muted-foreground">Run scheduled audit cycles with auto-generated discrepancy reports.</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}><Plus className="size-4 mr-2" /> New Audit Cycle</Button>
+        {role === "admin" && (
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="size-4 mr-2" /> New Audit Cycle
+          </Button>
+        )}
       </div>
 
       {showForm && (
@@ -103,9 +126,24 @@ export function AuditWorkspace() {
           <CardContent>
             <form onSubmit={handleCreate} className="grid gap-3 md:grid-cols-2">
               <Input placeholder="Cycle Name (e.g. Q4 Asset Verification)" value={name} onChange={e => setName(e.target.value)} required />
-              <Input placeholder="Scope Department ID (Optional)" value={scopeDepartmentId} onChange={e => setScopeDepartmentId(e.target.value)} />
+              <select className="h-9 w-full rounded-md border bg-background px-3 text-sm" value={scopeDepartmentId} onChange={e => setScopeDepartmentId(e.target.value)}>
+                <option value="">All Departments (No Scope)</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
               <Input placeholder="Scope Location (Optional)" value={scopeLocation} onChange={e => setScopeLocation(e.target.value)} />
-              <Input placeholder="Auditor Employee IDs (comma separated)" value={auditorEmployeeIds} onChange={e => setAuditorEmployeeIds(e.target.value)} required />
+              <div className="flex flex-col gap-1">
+                 <span className="text-xs text-muted-foreground">Select Auditors (Ctrl/Cmd + Click for multiple)</span>
+                 <select multiple className="h-24 w-full rounded-md border bg-background px-3 py-2 text-sm" value={auditorEmployeeIds ? auditorEmployeeIds.split(",") : []} onChange={e => {
+                   const selected = Array.from(e.target.selectedOptions, option => option.value);
+                   setAuditorEmployeeIds(selected.join(","));
+                 }} required>
+                   {employees.map(emp => (
+                     <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
+                   ))}
+                 </select>
+              </div>
               <div className="flex gap-2 md:col-span-2">
                 <Input type="date" placeholder="Start Date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
                 <Input type="date" placeholder="End Date" value={endDate} onChange={e => setEndDate(e.target.value)} required />

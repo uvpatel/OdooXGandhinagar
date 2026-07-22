@@ -17,9 +17,10 @@ type Allocation = {
   allocatedAt: string;
   expectedReturnDate: string | null;
   status: string;
+  returnRequestedAt: string | null;
 };
 
-export function AllocationWorkspace() {
+export function AllocationWorkspace({ role }: { role: string }) {
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -87,16 +88,31 @@ export function AllocationWorkspace() {
   };
 
   const handleReturn = async (id: string) => {
+    const notes = prompt("Enter return condition notes (e.g. good, damaged screen):", "Returned in good condition");
+    if (notes === null) return; // User cancelled
+    
     const res = await fetch(`/api/allocations/${id}/return`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ returnConditionNotes: "Returned in good condition" })
+      body: JSON.stringify({ notes: notes })
     });
     if (res.ok) {
       fetchData();
     } else {
       const err = await res.json();
       alert(`Return failed: ${err.error}`);
+    }
+  };
+
+  const handleRequestReturn = async (id: string) => {
+    if (!confirm("Are you sure you want to request a return for this asset?")) return;
+    const res = await fetch(`/api/allocations/${id}/request-return`, { method: "POST" });
+    if (res.ok) {
+      alert("Return requested successfully. An Admin will approve it shortly.");
+      fetchData();
+    } else {
+      const err = await res.json();
+      alert(`Request failed: ${err.error}`);
     }
   };
 
@@ -110,7 +126,9 @@ export function AllocationWorkspace() {
         </div>
         <div className="flex gap-2">
             <Button variant="outline"><ArrowRightLeft className="size-4 mr-2"/>Transfer Requests</Button>
-            <Button onClick={() => setShowForm((curr) => !curr)}><Plus className="size-4 mr-2"/>New Allocation</Button>
+            {(role === "admin" || role === "asset_manager") && (
+              <Button onClick={() => setShowForm((curr) => !curr)}><Plus className="size-4 mr-2"/>New Allocation</Button>
+            )}
         </div>
       </div>
 
@@ -179,7 +197,28 @@ export function AllocationWorkspace() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => handleReturn(allocation.id)}>Return</Button>
+                    {(role === "admin" || role === "asset_manager") ? (
+                      <div className="flex justify-end gap-2">
+                        {allocation.returnRequestedAt && allocation.status === "active" && (
+                           <Badge variant="outline" className="mr-2 border-yellow-500 text-yellow-600">Return Requested</Badge>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => handleReturn(allocation.id)}>
+                           {allocation.returnRequestedAt ? "Approve Return" : "Force Return"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end gap-2">
+                         {allocation.returnRequestedAt && allocation.status === "active" ? (
+                             <span className="text-muted-foreground text-sm italic mr-2">Return pending approval...</span>
+                         ) : (
+                             <Button variant="outline" size="sm" onClick={() => handleRequestReturn(allocation.id)}>Request Return</Button>
+                         )}
+                         <Button variant="ghost" size="sm" onClick={() => {
+                            setAssetId(allocation.assetTag); // Or somehow map to actual transfer UI. Wait, we should just alert them to use the catalog.
+                            alert("To transfer an asset to someone else, use the Asset Catalog to request a Transfer, or ask the recipient to request a Transfer for this asset.");
+                         }}>Transfer</Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

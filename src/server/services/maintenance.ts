@@ -5,7 +5,13 @@ import { createMaintenanceSchema, maintenanceTransitionSchema } from "@/lib/vali
 import { DomainError } from "@/server/http";
 import { logActivity, notify } from "./activity";
 
-export async function listMaintenanceRequests() { return db.select().from(maintenanceRequests); }
+export async function listMaintenanceRequests(employee: { id: string; role: string }) {
+  let query = db.select().from(maintenanceRequests).$dynamic();
+  if (employee.role === "employee" || employee.role === "department_head") {
+    query = query.where(eq(maintenanceRequests.raisedByEmployeeId, employee.id));
+  }
+  return query;
+}
 
 export async function raiseMaintenanceRequest(input: unknown, actorEmployeeId: string) {
   const parsed = createMaintenanceSchema.safeParse(input);
