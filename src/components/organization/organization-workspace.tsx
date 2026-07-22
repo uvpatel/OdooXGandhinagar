@@ -60,28 +60,16 @@ export function OrganizationWorkspace({ role }: { role: string }) {
   };
 
   const addCategory = async () => {
-<<<<<<< HEAD
     const name = window.prompt("Asset category name");
-=======
-    const name = window.prompt("Category name (e.g. Computers, Furniture)");
->>>>>>> be5363df8834695bafc6c882f13ccacf9a903af4
     if (!name?.trim()) return;
     const res = await fetch("/api/organization/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-<<<<<<< HEAD
       body: JSON.stringify({ name: name.trim() }),
     });
     if (!res.ok) {
       const err = await res.json();
       alert(`Error: ${err.error || "Failed to create asset category"}`);
-=======
-      body: JSON.stringify({ name: name.trim() })
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      alert(`Error: ${err.error || "Failed to create category"}`);
->>>>>>> be5363df8834695bafc6c882f13ccacf9a903af4
       return;
     }
     fetchData();

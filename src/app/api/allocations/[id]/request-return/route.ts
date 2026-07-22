@@ -6,12 +6,13 @@ import { allocations } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { logActivity, notify } from "@/server/services/activity";
 
-export async function POST(request: Request, context: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const employee = await requireApiEmployee(request, ["admin", "asset_manager", "department_head", "employee"]);
+    const { id } = await context.params;
     
     // Find the allocation
-    const [allocation] = await db.select().from(allocations).where(and(eq(allocations.id, context.params.id), eq(allocations.status, "active"))).limit(1);
+    const [allocation] = await db.select().from(allocations).where(and(eq(allocations.id, id), eq(allocations.status, "active"))).limit(1);
     
     if (!allocation) {
       throw new DomainError("NOT_FOUND", "Active allocation not found.");
@@ -27,7 +28,7 @@ export async function POST(request: Request, context: { params: { id: string } }
 
     await db.update(allocations)
       .set({ returnRequestedAt: new Date() })
-      .where(eq(allocations.id, context.params.id));
+      .where(eq(allocations.id, id));
 
     await logActivity(employee.id, "allocation.return_requested", "allocation", allocation.id, { assetId: allocation.assetId });
 
