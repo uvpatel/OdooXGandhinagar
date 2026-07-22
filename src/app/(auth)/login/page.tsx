@@ -1,6 +1,8 @@
 import { LoginForm } from "@/components/login-form"
+import { requireUnAuth } from "@/lib/auth-guard"
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  await requireUnAuth()
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-md space-y-8 rounded-lg border bg-background p-8 shadow-lg">
