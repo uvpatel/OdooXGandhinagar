@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-=======
+
 # 🚀 AssetFlow ERP
 
 AssetFlow is a modern, enterprise-grade Asset & Resource Management System designed to help organizations register, allocate, track, maintain, audit, and manage physical assets and shared resources through a centralized, secure, and role-based platform.
@@ -95,5 +94,4 @@ AssetFlow leverages strict role-based access checks at both the API and UI layer
 - `employee`: Self-service requests, personal allocations, maintenance reporting, and resource booking.
 
 ---
-*Built with ❤️ by Team AssetFlow.*
->>>>>>> be5363df8834695bafc6c882f13ccacf9a903af4
+Built with ❤️ by Team AssetFlow.
